@@ -377,7 +377,7 @@ func (m FormViewModel) renderPriorities() string {
 	// Add navigation hint
 	content := strings.Join(options, " │ ")
 	if m.focusIndex == 3 {
-		content += blurredStyle.Render(" (← → to select)")
+		content += blurredStyle.Render("\n(← → to select)")
 	}
 
 	return style.Render(content)
