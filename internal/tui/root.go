@@ -12,6 +12,7 @@ type View int
 const (
 	MainView View = iota
 	FormView
+	DetailView
 )
 
 func (v View) String() string {
@@ -20,6 +21,8 @@ func (v View) String() string {
 		return "main"
 	case FormView:
 		return "form"
+	case DetailView:
+		return "detail"
 	default:
 		return "unknown"
 	}
@@ -30,6 +33,7 @@ type rootModel struct {
 	width, height int
 	mainView      views.MainViewModel
 	formView      views.FormViewModel
+	detailView    views.DetailViewModel
 	store         *storage.JSONStore
 	tasks         []models.Task
 }
@@ -73,6 +77,27 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, newCmd
 
+	case views.ShowDetailMsg:
+		m.detailView = views.NewDetailViewModel(msg.Task)
+		m.currentView = DetailView
+		return m, nil
+
+	case views.ToggleTaskMsg:
+		// Find and toggle the task
+		for i := range m.tasks {
+			if m.tasks[i].ID == msg.TaskID {
+				m.tasks[i].Completed = !m.tasks[i].Completed
+				break
+			}
+		}
+
+		// Update storage
+		m.store.Save(m.tasks)
+
+		// Update main view
+		m.mainView.UpdateTasks(m.tasks)
+		return m, nil
+
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
@@ -84,6 +109,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if m.currentView == FormView && msg.String() == "esc" {
+			m.currentView = MainView
+			return m, nil
+		}
+
+		if m.currentView == DetailView && (msg.String() == "esc" || msg.String() == "q") {
 			m.currentView = MainView
 			return m, nil
 		}
@@ -118,6 +148,16 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, newCmd
+
+	case DetailView:
+		newModel, cmd := m.detailView.Update(msg)
+		if newDetailView, ok := newModel.(views.DetailViewModel); ok {
+			m.detailView = newDetailView
+			if m.detailView.ShouldReturn() {
+				m.currentView = MainView
+			}
+		}
+		return m, cmd
 	}
 
 	return m, nil
@@ -129,6 +169,8 @@ func (m rootModel) View() string {
 		return m.mainView.View()
 	case FormView:
 		return m.formView.View()
+	case DetailView:
+		return m.detailView.View()
 	default:
 		return "Unknown View"
 	}

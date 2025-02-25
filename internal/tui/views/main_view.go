@@ -44,6 +44,8 @@ type keyMap struct {
 	Edit   key.Binding
 	Help   key.Binding
 	Quit   key.Binding
+	Enter  key.Binding
+	Space  key.Binding
 }
 
 var keys = keyMap{
@@ -75,6 +77,14 @@ var keys = keyMap{
 		key.WithKeys("q", "esc"),
 		key.WithHelp("q", "quit"),
 	),
+	Enter: key.NewBinding(
+		key.WithKeys("enter"),
+		key.WithHelp("enter", "view details"),
+	),
+	Space: key.NewBinding(
+		key.WithKeys(" "),
+		key.WithHelp("space", "toggle completed"),
+	),
 }
 
 // Add these methods after the keyMap struct definition
@@ -84,11 +94,20 @@ func (k keyMap) ShortHelp() []key.Binding {
 
 func (k keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{k.Up, k.Down},     // First column
-		{k.New, k.Edit},    // Second column
-		{k.Delete, k.Help}, // Third column
-		{k.Quit},           // Fourth column
+		{k.Up, k.Down, k.Enter},
+		{k.New, k.Edit, k.Space},
+		{k.Delete, k.Help},
+		{k.Quit},
 	}
+}
+
+// Add event for view transition
+type ShowDetailMsg struct {
+	Task models.Task
+}
+
+type ToggleTaskMsg struct {
+	TaskID string
 }
 
 type MainViewModel struct {
@@ -152,6 +171,18 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, keys.Help):
 			m.showHelp = !m.showHelp
 			return m, nil
+		case msg.Type == tea.KeyEnter:
+			if task, ok := m.SelectedTask(); ok {
+				return m, func() tea.Msg {
+					return ShowDetailMsg{Task: task}
+				}
+			}
+		case key.Matches(msg, keys.Space):
+			if task, ok := m.SelectedTask(); ok {
+				return m, func() tea.Msg {
+					return ToggleTaskMsg{TaskID: task.ID}
+				}
+			}
 		}
 	}
 
@@ -181,8 +212,8 @@ func (m MainViewModel) View() string {
 		Height(m.height).
 		Render(
 			mainContainerStyle.
-				Width(m.width-4).
-				Height(m.height-2).
+				Width(m.width - 4).
+				Height(m.height - 2).
 				Render(content.String()),
 		)
 }
@@ -220,4 +251,17 @@ func (m *MainViewModel) UpdateTasks(tasks []models.Task) {
 	}
 
 	m.table.SetRows(rows)
+}
+
+func (m MainViewModel) SelectedTask() (models.Task, bool) {
+	if len(m.tasks) == 0 {
+		return models.Task{}, false
+	}
+	selected := m.table.SelectedRow()
+	for _, task := range m.tasks {
+		if task.Title == selected[0] {
+			return task, true
+		}
+	}
+	return models.Task{}, false
 }
