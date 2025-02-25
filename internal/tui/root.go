@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"slices"
+
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/sabry-awad97/task-manager/internal/storage"
 	"github.com/sabry-awad97/task-manager/internal/tui/models"
@@ -104,6 +106,23 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.formView = views.NewFormViewModel()
 		m.formView.InitForEdit(msg.Task)
 		m.currentView = FormView
+		return m, nil
+
+	case views.DeleteTaskMsg:
+		// Find and remove the task
+		for i, task := range m.tasks {
+			if task.ID == msg.TaskID {
+				// Remove task from slice
+				m.tasks = slices.Delete(m.tasks, i, i+1)
+				break
+			}
+		}
+
+		// Update storage
+		m.store.Save(m.tasks)
+
+		// Update main view
+		m.mainView.UpdateTasks(m.tasks)
 		return m, nil
 
 	case tea.KeyMsg:

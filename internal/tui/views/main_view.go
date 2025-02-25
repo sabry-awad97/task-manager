@@ -34,6 +34,24 @@ var (
 	statusStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
 			Align(lipgloss.Center)
+
+	actionStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("205")).
+			Width(2).
+			Align(lipgloss.Center)
+
+	actionSeparatorStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color("240")).
+				Width(1).
+				Align(lipgloss.Center)
+)
+
+// Add constants for action column
+const (
+	actionViewIcon   = "👁️"
+	actionEditIcon   = "✏️"
+	actionDeleteIcon = "❌"
+	actionSeparator  = "│"
 )
 
 type keyMap struct {
@@ -115,6 +133,11 @@ type EditTaskMsg struct {
 	Task models.Task
 }
 
+// Add new message type for delete
+type DeleteTaskMsg struct {
+	TaskID string
+}
+
 type MainViewModel struct {
 	table    table.Model
 	tasks    []models.Task
@@ -132,6 +155,7 @@ func NewMainViewModel() MainViewModel {
 		{Title: "Due Date", Width: 12},
 		{Title: "Priority", Width: 12},
 		{Title: "Status", Width: 10},
+		{Title: "Actions", Width: 25}, // Increased width for actions
 	}
 
 	t := table.New(
@@ -169,7 +193,7 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.table.SetWidth(m.width - 4)
+		m.table.SetWidth(m.width)
 		m.table.SetHeight(m.height - 6)
 		return m, nil
 
@@ -196,6 +220,12 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return EditTaskMsg{Task: task}
 				}
 			}
+		case key.Matches(msg, keys.Delete):
+			if task, ok := m.SelectedTask(); ok {
+				return m, func() tea.Msg {
+					return DeleteTaskMsg{TaskID: task.ID}
+				}
+			}
 		}
 
 	case tea.MouseMsg:
@@ -204,27 +234,18 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch msg.Action {
 		case tea.MouseActionPress:
-			switch msg.Button {
-			case tea.MouseButtonLeft:
+			if msg.Button == tea.MouseButtonLeft {
 				if m.isClickInTable(msg) {
 					rowIdx := m.getClickedRowIndex(msg)
 					if rowIdx >= 0 && rowIdx < len(m.tasks) {
 						m.table.SetCursor(rowIdx)
-						if task, ok := m.SelectedTask(); ok {
-							return m, func() tea.Msg {
-								return ShowDetailMsg{Task: task}
-							}
-						}
-					}
-				}
-			case tea.MouseButtonRight:
-				if m.isClickInTable(msg) {
-					rowIdx := m.getClickedRowIndex(msg)
-					if rowIdx >= 0 && rowIdx < len(m.tasks) {
-						m.table.SetCursor(rowIdx)
-						if task, ok := m.SelectedTask(); ok {
-							return m, func() tea.Msg {
-								return ToggleTaskMsg{TaskID: task.ID}
+
+						// Check for action column clicks
+						if clickedAction := m.getClickedAction(msg); clickedAction != nil {
+							task, ok := m.SelectedTask()
+							if ok {
+								msg := clickedAction(task)
+								return m, func() tea.Msg { return msg }
 							}
 						}
 					}
@@ -249,6 +270,38 @@ func (m MainViewModel) isClickInTable(msg tea.MouseMsg) bool {
 func (m MainViewModel) getClickedRowIndex(msg tea.MouseMsg) int {
 	tableTop := 2               // Same as in isClickInTablesClickInTable
 	return msg.Y - tableTop - 1 // -1 for header row
+}
+
+// Add helper method for action column clicks
+func (m MainViewModel) getClickedAction(msg tea.MouseMsg) func(models.Task) tea.Msg {
+	// Calculate action column start (adjust these values based on your layout)
+	actionsStart := m.width - 24 // Adjusted for new column width
+
+	// If click is not in actions column
+	if msg.X < actionsStart {
+		return nil
+	}
+
+	// Calculate relative position within actions section
+	relativeX := msg.X - actionsStart
+
+	// Define click regions for each action
+	switch {
+	case relativeX >= 0 && relativeX < 4: // View icon
+		return func(t models.Task) tea.Msg {
+			return ShowDetailMsg{Task: t}
+		}
+	case relativeX >= 7 && relativeX < 11: // Edit icon
+		return func(t models.Task) tea.Msg {
+			return EditTaskMsg{Task: t}
+		}
+	case relativeX >= 14 && relativeX < 18: // Delete icon
+		return func(t models.Task) tea.Msg {
+			return DeleteTaskMsg{TaskID: t.ID}
+		}
+	default:
+		return nil
+	}
 }
 
 func (m MainViewModel) View() string {
@@ -303,11 +356,21 @@ func (m *MainViewModel) UpdateTasks(tasks []models.Task) {
 			status = "Done"
 		}
 
+		// Render actions with fixed widths and proper spacing
+		actions := []string{
+			actionStyle.Render(actionViewIcon),
+			actionSeparatorStyle.Render(actionSeparator),
+			actionStyle.Render(actionEditIcon),
+			actionSeparatorStyle.Render(actionSeparator),
+			actionStyle.Render(actionDeleteIcon),
+		}
+
 		rows[i] = table.Row{
 			task.Title,
 			task.DueDate.Format("2006-01-02"),
 			priorityStyle.Render(task.Priority.String()),
 			status,
+			strings.Join(actions, " "), // Add space between elements
 		}
 	}
 
