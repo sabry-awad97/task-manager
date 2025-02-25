@@ -2,6 +2,7 @@ package tui
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/sabry-awad97/task-manager/internal/tui/views"
 )
 
 type View int
@@ -25,11 +26,13 @@ func (v View) String() string {
 type rootModel struct {
 	currentView   View
 	width, height int
+	mainView      views.MainViewModel
 }
 
 func NewRootModel() rootModel {
 	return rootModel{
 		currentView: MainView,
+		mainView:    views.NewMainViewModel(),
 	}
 }
 
@@ -42,7 +45,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		return m, nil
+		newModel, newCmd := m.mainView.Update(msg)
+		if newMainView, ok := newModel.(views.MainViewModel); ok {
+			m.mainView = newMainView
+		}
+		return m, newCmd
 
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -53,7 +60,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch m.currentView {
 	case MainView:
-		return m, nil
+		newModel, newCmd := m.mainView.Update(msg)
+		if newMainView, ok := newModel.(views.MainViewModel); ok {
+			m.mainView = newMainView
+		}
+		return m, newCmd
 
 	case FormView:
 		return m, nil
@@ -63,5 +74,12 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m rootModel) View() string {
-	return "Hello World!"
+	switch m.currentView {
+	case MainView:
+		return m.mainView.View()
+	case FormView:
+		return "Form View"
+	default:
+		return "Unknown View"
+	}
 }
