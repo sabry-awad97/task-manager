@@ -4,12 +4,14 @@ import (
 	"encoding/json"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/sabry-awad97/task-manager/internal/tui/models"
 )
 
 type JSONStore struct {
 	filePath string
+	mu       sync.Mutex
 }
 
 func NewJSONStore(path string) *JSONStore {
@@ -17,6 +19,9 @@ func NewJSONStore(path string) *JSONStore {
 }
 
 func (s *JSONStore) Save(tasks []models.Task) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	data, err := json.MarshalIndent(tasks, "", strings.Repeat(" ", 2))
 	if err != nil {
 		return err
@@ -26,6 +31,9 @@ func (s *JSONStore) Save(tasks []models.Task) error {
 }
 
 func (s *JSONStore) Load() ([]models.Task, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	data, err := os.ReadFile(s.filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
