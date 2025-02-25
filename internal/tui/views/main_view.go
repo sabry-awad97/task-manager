@@ -34,10 +34,6 @@ var (
 	statusStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
 			Align(lipgloss.Center)
-
-	helpStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("243")).
-			MarginTop(1)
 )
 
 type keyMap struct {
@@ -164,41 +160,31 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m MainViewModel) View() string {
-	var b strings.Builder
-
-	// Content container
-	var content strings.Builder
-
-	// Title
-	content.WriteString(titleStyle.Render("✨ Task Manager ✨"))
-	content.WriteString("\n")
-
-	// Table (main content)
-	content.WriteString(m.table.View())
-	content.WriteString("\n")
-
-	// Status bar
-	status := fmt.Sprintf("%d tasks • Press ? for help", len(m.tasks))
-	content.WriteString(statusStyle.Render(status))
-
-	// Help menu
 	if m.showHelp {
-		content.WriteString("\n")
-		content.WriteString(helpStyle.Render(m.help.View(keys)))
+		return RenderHelpModal(m.width, m.height)
 	}
 
-	// Wrap content in main container
-	mainContainer := mainContainerStyle.
-		Width(m.width - 4).
-		Height(m.height - 2).
-		Render(content.String())
+	// Pre-allocate builders with estimated capacity
+	content := strings.Builder{}
+	content.Grow(m.width * m.height)
 
-	b.WriteString(mainContainer)
+	// Build content in single pass
+	content.WriteString(titleStyle.Render("✨ Task Manager ✨"))
+	content.WriteByte('\n')
+	content.WriteString(m.table.View())
+	content.WriteByte('\n')
+	content.WriteString(statusStyle.Render(fmt.Sprintf("%d tasks • Press ? for help", len(m.tasks))))
 
+	// Apply container styles in sequence
 	return baseStyle.
 		Width(m.width).
 		Height(m.height).
-		Render(b.String())
+		Render(
+			mainContainerStyle.
+				Width(m.width-4).
+				Height(m.height-2).
+				Render(content.String()),
+		)
 }
 
 func (m *MainViewModel) UpdateTasks(tasks []models.Task) {
