@@ -13,6 +13,7 @@ const (
 	MainView View = iota
 	FormView
 	DetailView
+	ErrorView
 )
 
 func (v View) String() string {
@@ -36,6 +37,7 @@ type rootModel struct {
 	detailView    views.DetailViewModel
 	store         *storage.JSONStore
 	tasks         []models.Task
+	errorView     views.ErrorViewModel
 }
 
 func NewRootModel() rootModel {
@@ -123,6 +125,11 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.currentView = MainView
 			return m, nil
 		}
+	case error:
+		// Handle any error by showing the error view
+		m.errorView = views.NewErrorView(msg)
+		m.currentView = ErrorView
+		return m, m.errorView.Init()
 	}
 
 	switch m.currentView {
@@ -171,6 +178,16 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		return m, cmd
+
+	case ErrorView:
+		newModel, cmd := m.errorView.Update(msg)
+		if newErrorView, ok := newModel.(views.ErrorViewModel); ok {
+			m.errorView = newErrorView
+			if m.errorView.ShouldClose() {
+				m.currentView = MainView
+			}
+		}
+		return m, cmd
 	}
 
 	return m, nil
@@ -184,6 +201,8 @@ func (m rootModel) View() string {
 		return m.formView.View()
 	case DetailView:
 		return m.detailView.View()
+	case ErrorView:
+		return m.errorView.View()
 	default:
 		return "Unknown View"
 	}
