@@ -22,14 +22,6 @@ var (
 
 	_ = lipgloss.NewStyle()
 
-	focusedButton = focusedStyle.
-			Border(lipgloss.RoundedBorder()).
-			Padding(0, 3)
-
-	blurredButton = blurredStyle.
-			Border(lipgloss.RoundedBorder()).
-			Padding(0, 3)
-
 	errorStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("196")).
 			Italic(true)
@@ -88,25 +80,34 @@ var (
 		models.Medium: optionStyle.Foreground(lipgloss.Color("214")),
 		models.High:   optionStyle.Foreground(lipgloss.Color("196")),
 	}
+
+	buttonStyle = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("240")).
+			Padding(0, 3).
+			SetString("💾 Save")
+
+	activeButtonStyle = buttonStyle.Copy().
+				BorderForeground(lipgloss.Color("205"))
 )
 
 type FormViewModel struct {
-	title       textinput.Model
-	description textinput.Model
-	dueDate     textinput.Model
-	priority    int
-	focusIndex  int
-	errors      map[string]string
-	width       int
-	height      int
-	done        bool
-	isEditing   bool
-	taskID      string // Store original task ID when editing
+	title         textinput.Model
+	description   textinput.Model
+	dueDate       textinput.Model
+	priority      int
+	focusIndex    int
+	errors        map[string]string
+	width         int
+	height        int
+	done          bool
+	isEditing     bool
+	taskID        string // Store original task ID when editing
+	mouseInButton bool
 }
 
-func (m FormViewModel) Done() bool { return m.done }
+func (m FormViewModel) Done() bool      { return m.done }
 func (m FormViewModel) IsEditing() bool { return m.isEditing }
-
 
 func NewFormViewModel() FormViewModel {
 	title := textinput.New()
@@ -235,6 +236,37 @@ func (m FormViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
+		}
+
+	case tea.MouseMsg:
+		switch msg.Action {
+		case tea.MouseActionPress:
+			if msg.Button == tea.MouseButtonLeft {
+				// Check if clicked save button
+				if m.mouseInButton && m.validate() {
+					m.done = true
+					return m, nil
+				}
+
+				// Check if clicked priority options
+				if y := msg.Y - m.getPriorityY(); y >= 0 && y < 1 {
+					x := msg.X - m.getPriorityX()
+					switch {
+					case x >= 0 && x < 15: // Low
+						m.priority = 0
+					case x >= 15 && x < 30: // Medium
+						m.priority = 1
+					case x >= 30 && x < 45: // High
+						m.priority = 2
+					}
+				}
+			}
+
+		case tea.MouseActionMotion:
+			// Update button hover state
+			m.mouseInButton = msg.Y == m.getButtonY() &&
+				msg.X >= m.getButtonX() &&
+				msg.X < m.getButtonX()+10
 		}
 	}
 
@@ -401,9 +433,25 @@ func (m FormViewModel) renderInput(input textinput.Model, index int, errorKey st
 }
 
 func (m FormViewModel) renderSaveButton() string {
-	style := blurredButton
-	if m.focusIndex == 4 {
-		style = focusedButton
+	style := buttonStyle
+	if m.focusIndex == 4 || m.mouseInButton {
+		style = activeButtonStyle
 	}
 	return style.Render("💾 Save")
+}
+
+func (m FormViewModel) getButtonY() int {
+	return m.height - 4 // Adjust based on your layout
+}
+
+func (m FormViewModel) getButtonX() int {
+	return (m.width - 10) / 2 // Center position
+}
+
+func (m FormViewModel) getPriorityY() int {
+	return m.height - 8 // Adjust based on your layout
+}
+
+func (m FormViewModel) getPriorityX() int {
+	return 4 // Left margin
 }

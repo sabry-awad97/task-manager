@@ -122,6 +122,8 @@ type MainViewModel struct {
 	showHelp bool
 	width    int
 	height   int
+	mouseX   int // Add mouse position tracking
+	mouseY   int // Add mouse position tracking
 }
 
 func NewMainViewModel() MainViewModel {
@@ -195,10 +197,58 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 		}
+
+	case tea.MouseMsg:
+		m.mouseX = msg.X
+		m.mouseY = msg.Y
+
+		switch msg.Action {
+		case tea.MouseActionPress:
+			switch msg.Button {
+			case tea.MouseButtonLeft:
+				if m.isClickInTable(msg) {
+					rowIdx := m.getClickedRowIndex(msg)
+					if rowIdx >= 0 && rowIdx < len(m.tasks) {
+						m.table.SetCursor(rowIdx)
+						if task, ok := m.SelectedTask(); ok {
+							return m, func() tea.Msg {
+								return ShowDetailMsg{Task: task}
+							}
+						}
+					}
+				}
+			case tea.MouseButtonRight:
+				if m.isClickInTable(msg) {
+					rowIdx := m.getClickedRowIndex(msg)
+					if rowIdx >= 0 && rowIdx < len(m.tasks) {
+						m.table.SetCursor(rowIdx)
+						if task, ok := m.SelectedTask(); ok {
+							return m, func() tea.Msg {
+								return ToggleTaskMsg{TaskID: task.ID}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
+}
+
+// Add helper methods for mouse interaction
+func (m MainViewModel) isClickInTable(msg tea.MouseMsg) bool {
+	// Adjust these values based on your layout
+	tableTop := 2 // Account for title and padding
+	tableBottom := tableTop + m.table.Height()
+
+	return msg.Y >= tableTop && msg.Y <= tableBottom
+}
+
+func (m MainViewModel) getClickedRowIndex(msg tea.MouseMsg) int {
+	tableTop := 2               // Same as in isClickInTablesClickInTable
+	return msg.Y - tableTop - 1 // -1 for header row
 }
 
 func (m MainViewModel) View() string {
