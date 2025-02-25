@@ -4,14 +4,32 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+type View int
+
+const (
+	MainView View = iota
+	FormView
+)
+
+func (v View) String() string {
+	switch v {
+	case MainView:
+		return "main"
+	case FormView:
+		return "form"
+	default:
+		return "unknown"
+	}
+}
+
 type rootModel struct {
-	currentView   string
+	currentView   View
 	width, height int
 }
 
 func NewRootModel() rootModel {
 	return rootModel{
-		currentView: "main",
+		currentView: MainView,
 	}
 }
 
@@ -31,6 +49,14 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c", "q":
 			return m, tea.Quit
 		}
+	}
+
+	switch m.currentView {
+	case MainView:
+		return m, nil
+
+	case FormView:
+		return m, nil
 	}
 
 	return m, nil
