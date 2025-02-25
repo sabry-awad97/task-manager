@@ -100,9 +100,13 @@ type FormViewModel struct {
 	width       int
 	height      int
 	done        bool
+	isEditing   bool
+	taskID      string // Store original task ID when editing
 }
 
 func (m FormViewModel) Done() bool { return m.done }
+func (m FormViewModel) IsEditing() bool { return m.isEditing }
+
 
 func NewFormViewModel() FormViewModel {
 	title := textinput.New()
@@ -128,7 +132,18 @@ func NewFormViewModel() FormViewModel {
 		description: description,
 		dueDate:     dueDate,
 		errors:      make(map[string]string),
+		isEditing:   false,
 	}
+}
+
+// Add method to initialize form for editing
+func (m *FormViewModel) InitForEdit(task models.Task) {
+	m.title.SetValue(task.Title)
+	m.description.SetValue(task.Description)
+	m.dueDate.SetValue(task.DueDate.Format("2006-01-02"))
+	m.priority = int(task.Priority)
+	m.isEditing = true
+	m.taskID = task.ID
 }
 
 func (m FormViewModel) Init() tea.Cmd {
@@ -243,7 +258,11 @@ func (m FormViewModel) View() string {
 	var content strings.Builder
 
 	// Title header
-	content.WriteString(titleStyle.Render("✨ New Task"))
+	title := "✨ New Task"
+	if m.isEditing {
+		title = "✏️ Edit Task"
+	}
+	content.WriteString(titleStyle.Render(title))
 	content.WriteString("\n")
 
 	// Title input
@@ -309,12 +328,19 @@ func (m *FormViewModel) validate() bool {
 
 func (m *FormViewModel) GetTask() models.Task {
 	dueDate, _ := time.Parse("2006-01-02", m.dueDate.Value())
-	return models.NewTask(
+	task := models.NewTask(
 		m.title.Value(),
 		m.description.Value(),
 		dueDate,
 		models.PriorityLevel(m.priority),
 	)
+
+	// Preserve original ID if editing
+	if m.isEditing {
+		task.ID = m.taskID
+	}
+
+	return task
 }
 
 func (m FormViewModel) renderPriorities() string {

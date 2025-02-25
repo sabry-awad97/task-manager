@@ -98,6 +98,12 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.mainView.UpdateTasks(m.tasks)
 		return m, nil
 
+	case views.EditTaskMsg:
+		m.formView = views.NewFormViewModel()
+		m.formView.InitForEdit(msg.Task)
+		m.currentView = FormView
+		return m, nil
+
 	case tea.KeyMsg:
 		if msg.String() == "ctrl+c" {
 			return m, tea.Quit
@@ -132,17 +138,24 @@ func (m rootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if newFormView, ok := newModel.(views.FormViewModel); ok {
 			m.formView = newFormView
 			if newFormView.Done() {
-				// Create new task
 				newTask := newFormView.GetTask()
-				m.tasks = append(m.tasks, newTask)
 
-				// Update storage
+				if m.formView.IsEditing() {
+					// Update existing task
+					for i, task := range m.tasks {
+						if task.ID == newTask.ID {
+							m.tasks[i] = newTask
+							break
+						}
+					}
+				} else {
+					// Add new task
+					m.tasks = append(m.tasks, newTask)
+				}
+
+				// Update storage and view
 				m.store.Save(m.tasks)
-
-				// Update main view
 				m.mainView.UpdateTasks(m.tasks)
-
-				// Reset form and return to main view
 				m.currentView = MainView
 				m.formView = views.NewFormViewModel()
 			}

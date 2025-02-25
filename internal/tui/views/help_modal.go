@@ -47,6 +47,7 @@ func RenderHelpModal(width, height int) string {
 			Items: []HelpItem{
 				{"↑/k", "Move up"},
 				{"↓/j", "Move down"},
+				{"enter", "View details"},
 				{"tab", "Next field"},
 				{"shift+tab", "Previous field"},
 			},

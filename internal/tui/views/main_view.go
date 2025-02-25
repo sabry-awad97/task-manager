@@ -110,6 +110,11 @@ type ToggleTaskMsg struct {
 	TaskID string
 }
 
+// Add edit message type
+type EditTaskMsg struct {
+	Task models.Task
+}
+
 type MainViewModel struct {
 	table    table.Model
 	tasks    []models.Task
@@ -181,6 +186,12 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if task, ok := m.SelectedTask(); ok {
 				return m, func() tea.Msg {
 					return ToggleTaskMsg{TaskID: task.ID}
+				}
+			}
+		case key.Matches(msg, keys.Edit):
+			if task, ok := m.SelectedTask(); ok {
+				return m, func() tea.Msg {
+					return EditTaskMsg{Task: task}
 				}
 			}
 		}
