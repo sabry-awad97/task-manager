@@ -15,17 +15,29 @@ import (
 
 var (
 	baseStyle = lipgloss.NewStyle().
-			BorderStyle(lipgloss.NormalBorder()).
+			BorderStyle(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("240"))
 
-	titleStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("99")).
-			Bold(true).
-			Padding(0, 1)
+	mainContainerStyle = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(lipgloss.Color("240")).
+				Margin(0).
+				Padding(1)
 
-	statusBarStyle = lipgloss.NewStyle().
+	titleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("205")).
+			MarginBottom(1).
+			Padding(0, 1).
+			Align(lipgloss.Center)
+
+	statusStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color("241")).
-			Padding(0, 1)
+			Align(lipgloss.Center)
+
+	helpStyle = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("243")).
+			MarginTop(1)
 )
 
 type keyMap struct {
@@ -90,14 +102,13 @@ type MainViewModel struct {
 	showHelp bool
 	width    int
 	height   int
-	loaded   bool
 }
 
 func NewMainViewModel() MainViewModel {
 	columns := []table.Column{
-		{Title: "Title", Width: 20},
-		{Title: "Due Date", Width: 15},
-		{Title: "Priority", Width: 10},
+		{Title: "Title", Width: 30},
+		{Title: "Due Date", Width: 12},
+		{Title: "Priority", Width: 12},
 		{Title: "Status", Width: 10},
 	}
 
@@ -108,8 +119,16 @@ func NewMainViewModel() MainViewModel {
 	)
 
 	t.SetStyles(table.Styles{
-		Header:   lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("99")),
-		Selected: lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("212")),
+		Header: lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("99")).
+			Padding(0, 1),
+		Selected: lipgloss.NewStyle().
+			Background(lipgloss.Color("205")).
+			Foreground(lipgloss.Color("0")).
+			Bold(true),
+		Cell: lipgloss.NewStyle().
+			Padding(0, 1),
 	})
 
 	return MainViewModel{
@@ -128,8 +147,8 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.table.SetWidth(msg.Width - 2)
-		m.table.SetHeight(msg.Height - 4) // Leave room for title and status
+		m.table.SetWidth(m.width - 4)
+		m.table.SetHeight(m.height - 6)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -147,25 +166,39 @@ func (m MainViewModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m MainViewModel) View() string {
 	var b strings.Builder
 
-	// Title
-	b.WriteString(titleStyle.Render("Task Manager"))
-	b.WriteString("\n")
+	// Content container
+	var content strings.Builder
 
-	// Table
-	b.WriteString(m.table.View())
-	b.WriteString("\n")
+	// Title
+	content.WriteString(titleStyle.Render("✨ Task Manager ✨"))
+	content.WriteString("\n")
+
+	// Table (main content)
+	content.WriteString(m.table.View())
+	content.WriteString("\n")
 
 	// Status bar
 	status := fmt.Sprintf("%d tasks • Press ? for help", len(m.tasks))
-	b.WriteString(statusBarStyle.Render(status))
+	content.WriteString(statusStyle.Render(status))
 
-	// Help
+	// Help menu
 	if m.showHelp {
-		b.WriteString("\n")
-		b.WriteString(m.help.View(keys))
+		content.WriteString("\n")
+		content.WriteString(helpStyle.Render(m.help.View(keys)))
 	}
 
-	return baseStyle.Width(m.width).Height(m.height).Render(b.String())
+	// Wrap content in main container
+	mainContainer := mainContainerStyle.
+		Width(m.width - 4).
+		Height(m.height - 2).
+		Render(content.String())
+
+	b.WriteString(mainContainer)
+
+	return baseStyle.
+		Width(m.width).
+		Height(m.height).
+		Render(b.String())
 }
 
 func (m *MainViewModel) UpdateTasks(tasks []models.Task) {
@@ -177,6 +210,16 @@ func (m *MainViewModel) UpdateTasks(tasks []models.Task) {
 	})
 
 	for i, task := range tasks {
+		priorityStyle := lipgloss.NewStyle()
+		switch task.Priority {
+		case models.Low:
+			priorityStyle = priorityStyle.Foreground(lipgloss.Color("42"))
+		case models.Medium:
+			priorityStyle = priorityStyle.Foreground(lipgloss.Color("214"))
+		case models.High:
+			priorityStyle = priorityStyle.Foreground(lipgloss.Color("196"))
+		}
+
 		status := "Pending"
 		if task.Completed {
 			status = "Done"
@@ -185,7 +228,7 @@ func (m *MainViewModel) UpdateTasks(tasks []models.Task) {
 		rows[i] = table.Row{
 			task.Title,
 			task.DueDate.Format("2006-01-02"),
-			task.Priority.String(),
+			priorityStyle.Render(task.Priority.String()),
 			status,
 		}
 	}
