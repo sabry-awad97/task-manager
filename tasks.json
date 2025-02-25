@@ -1,0 +1,92 @@
+[
+  {
+    "id": "b5fa3c19-85dc-45e2-bc59-003fc8b3b92f",
+    "title": "Submit project report",
+    "description": "Finalize and submit the quarterly project report",
+    "due_date": "2025-03-01T12:00:00Z",
+    "priority": 2,
+    "completed": false,
+    "created_at": "2025-02-25T08:30:00+02:00"
+  },
+  {
+    "id": "c08ef742-4e47-4e1a-bab6-71c7e1d0fbb9",
+    "title": "Team meeting",
+    "description": "Weekly sync-up with the team",
+    "due_date": "2025-02-28T15:00:00Z",
+    "priority": 1,
+    "completed": false,
+    "created_at": "2025-02-25T09:15:00+02:00"
+  },
+  {
+    "id": "d1a31b5e-871c-4d5b-981a-334a62e22b58",
+    "title": "Doctor appointment",
+    "description": "Routine health check-up",
+    "due_date": "2025-03-05T09:00:00Z",
+    "priority": 1,
+    "completed": false,
+    "created_at": "2025-02-25T10:00:00+02:00"
+  },
+  {
+    "id": "e4f5d377-3e44-4baf-b657-2b52c77676b3",
+    "title": "Grocery shopping",
+    "description": "Buy vegetables, milk, and eggs",
+    "due_date": "2025-02-26T18:00:00Z",
+    "priority": 0,
+    "completed": true,
+    "created_at": "2025-02-24T17:45:00+02:00"
+  },
+  {
+    "id": "f98c1b07-4469-4d6b-9f46-93d1f1b90c58",
+    "title": "Prepare presentation",
+    "description": "Create slides for the client presentation",
+    "due_date": "2025-03-03T10:00:00Z",
+    "priority": 2,
+    "completed": false,
+    "created_at": "2025-02-25T11:30:00+02:00"
+  },
+  {
+    "id": "a6bdb835-3b87-4b1e-99c8-1e24f79cd8e5",
+    "title": "Call supplier",
+    "description": "Discuss new stock availability",
+    "due_date": "2025-02-28T14:00:00Z",
+    "priority": 1,
+    "completed": true,
+    "created_at": "2025-02-25T12:20:00+02:00"
+  },
+  {
+    "id": "ed2f74b6-9f64-45a1-ae9d-60ff6f469e3e",
+    "title": "Renew insurance",
+    "description": "Renew car insurance policy before expiry",
+    "due_date": "2025-03-07T23:59:59Z",
+    "priority": 2,
+    "completed": false,
+    "created_at": "2025-02-25T13:45:00+02:00"
+  },
+  {
+    "id": "1e27c9d8-07ad-4666-a0a8-f64f3ff2b2a3",
+    "title": "Workout session",
+    "description": "Evening gym session",
+    "due_date": "2025-02-26T19:30:00Z",
+    "priority": 0,
+    "completed": false,
+    "created_at": "2025-02-25T14:10:00+02:00"
+  },
+  {
+    "id": "c0b88f21-384e-4b65-9f97-57ad20a48417",
+    "title": "Book flight tickets",
+    "description": "Reserve tickets for the business trip",
+    "due_date": "2025-03-10T16:00:00Z",
+    "priority": 2,
+    "completed": false,
+    "created_at": "2025-02-25T15:00:00+02:00"
+  },
+  {
+    "id": "9d2a6d8f-44cd-44f6-91d5-b07d97e1b4cb",
+    "title": "Read book",
+    "description": "Finish reading 'Atomic Habits'",
+    "due_date": "2025-03-02T21:00:00Z",
+    "priority": 0,
+    "completed": true,
+    "created_at": "2025-02-25T16:25:00+02:00"
+  }
+]
